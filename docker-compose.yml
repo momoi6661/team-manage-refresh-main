@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    container_name: team-manage-app
+    ports:
+      - "61210:8008"
+      - "1455:8008"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/team_manage.db

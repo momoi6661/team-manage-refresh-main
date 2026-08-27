@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}系统设置 - GPT Team 管理系统{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>系统设置</h2>
+</div>
+<div class="settings-top-nav">
+    <a href="#settings-proxy" class="settings-nav-pill settings-nav-link" data-target="settings-proxy">代理配置</a>
+    <a href="#settings-password" class="settings-nav-pill settings-nav-link" data-target="settings-password">修改密码</a>
+    <a href="#settings-log" class="settings-nav-pill settings-nav-link" data-target="settings-log">日志级别</a>
+    <a href="#settings-refresh" class="settings-nav-pill settings-nav-link" data-target="settings-refresh">Token 预刷新</a>
+    <a href="#settings-team-auto-refresh" class="settings-nav-pill settings-nav-link" data-target="settings-team-auto-refresh">Team 自动刷新</a>
+    <a href="#settings-ui-theme" class="settings-nav-pill settings-nav-link" data-target="settings-ui-theme">系统配色</a>
+</div>
+
+<!-- 代理配置 -->
+<div class="content-section settings-panel" id="settings-proxy">
+    <div class="section-header">
+        <h3>代理配置</h3>
+    </div>
+
+    <form id="proxyForm" class="settings-form">
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="proxyEnabled" name="enabled" {% if proxy_enabled %}checked{% endif %}>
+                <span>启用代理</span>
+            </label>
+            <p class="form-help">启用后,所有ChatGPT API请求将通过代理服务器</p>
+        </div>
+
+        <div class="form-group">
+            <label for="proxyUrl">代理地址</label>
+            <input type="text" id="proxyUrl" name="proxy" value="{{ proxy or '' }}"
+                placeholder="Docker 部署请填：http://host.docker.internal:7890"
+                class="form-control">
+            <p class="form-help">Docker 内不能使用 127.0.0.1 访问宿主机代理，请使用 host.docker.internal，例如 http://host.docker.internal:7890。支持 HTTP、SOCKS5 和 SOCKS5H。</p>
+        </div>
+
+        <button type="submit" class="btn btn-primary">保存代理配置</button>
+    </form>
+</div>
+
+<!-- 密码修改 -->
+<div class="content-section settings-panel" id="settings-password">
+    <div class="section-header">
+        <h3>修改密码</h3>
+    </div>
+
+    <form id="passwordForm" class="settings-form">
+        <div class="form-group">
+            <label for="oldPassword">旧密码</label>
+            <input type="password" id="oldPassword" name="old_password" required class="form-control"
+                placeholder="请输入当前密码">
+        </div>
+
+        <div class="form-group">
+            <label for="newPassword">新密码</label>
+            <input type="password" id="newPassword" name="new_password" required minlength="6" class="form-control"
+                placeholder="请输入新密码(至少6位)">
+        </div>
+
+        <div class="form-group">
+            <label for="confirmPassword">确认新密码</label>
+            <input type="password" id="confirmPassword" name="confirm_password" required minlength="6"
+                class="form-control" placeholder="请再次输入新密码">
+        </div>
+
+        <button type="submit" class="btn btn-primary">修改密码</button>
+        <p class="form-help">修改密码后需要重新登录</p>
+    </form>
+</div>
+
+<!-- 日志级别 -->
+<div class="content-section settings-panel" id="settings-log">
+    <div class="section-header">
+        <h3>日志级别</h3>
+    </div>
+
+    <form id="logLevelForm" class="settings-form">
+        <div class="form-group">
+            <label for="logLevel">日志级别</label>
+            <select id="logLevel" name="level" class="form-control">
+                <option value="DEBUG" {% if log_level=='DEBUG' %}selected{% endif %}>DEBUG - 调试信息</option>
+                <option value="INFO" {% if log_level=='INFO' %}selected{% endif %}>INFO - 一般信息</option>
+                <option value="WARNING" {% if log_level=='WARNING' %}selected{% endif %}>WARNING - 警告信息</option>
+                <option value="ERROR" {% if log_level=='ERROR' %}selected{% endif %}>ERROR - 错误信息</option>
+                <option value="CRITICAL" {% if log_level=='CRITICAL' %}selected{% endif %}>CRITICAL - 严重错误</option>
+            </select>
+            <p class="form-help">调整系统日志的详细程度,DEBUG级别会记录最详细的信息</p>
+        </div>
+
+        <button type="submit" class="btn btn-primary">保存日志级别</button>
+    </form>
+</div>
+
+
+
+<!-- Token 自动刷新配置 -->
+<div class="content-section settings-panel" id="settings-refresh">
+    <div class="section-header">
+        <h3>Token 自动刷新</h3>
+    </div>
+
+    <form id="tokenRefreshForm" class="settings-form">
+        <div class="form-group">
+            <label for="tokenRefreshInterval">刷新检查间隔 (分钟)</label>
+            <input type="number" id="tokenRefreshInterval" name="interval_minutes"
+                value="{{ token_refresh_interval_minutes or '30' }}" min="5" max="1440" class="form-control">
+            <p class="form-help">定时任务执行频率，建议 30 分钟</p>
+        </div>
+
+        <div class="form-group">
+            <label for="tokenRefreshWindow">提前刷新窗口 (小时)</label>
+            <input type="number" id="tokenRefreshWindow" name="window_hours"
+                value="{{ token_refresh_window_hours or '2' }}" min="1" max="24" class="form-control">
+            <p class="form-help">当 Access Token 距离过期小于此窗口时触发自动刷新</p>
+        </div>
+
+        <div class="form-group">
+            <label for="tokenRefreshClientId">默认 OAuth Client ID</label>
+            <input type="text" id="tokenRefreshClientId" name="client_id" value="{{ token_refresh_client_id or '' }}"
+                placeholder="用于 refresh_token 换新 AT（导入时未填写 client_id 则使用此值）" class="form-control">
+            <p class="form-help">建议填写你当前使用的 OpenAI OAuth Client ID，便于 RT 刷新流程统一配置</p>
+        </div>
+
+        <button type="submit" class="btn btn-primary">保存 Token 刷新配置</button>
+    </form>
+</div>
+
+<!-- Team 自动刷新配置 -->
+<div class="content-section settings-panel" id="settings-team-auto-refresh">
+    <div class="section-header">
+        <h3>Team 自动刷新</h3>
+    </div>
+
+    <form id="teamAutoRefreshForm" class="settings-form">
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="teamAutoRefreshEnabled" name="enabled" {% if (periodic_team_sync_enabled or 'true')|lower in ['1','true','yes','on'] %}checked{% endif %}>
+                <span>启用 Team 周期状态自动刷新</span>
+            </label>
+            <p class="form-help">关闭后将不再自动检查 Team 状态，仅可手动刷新。</p>
+        </div>
+
+        <div class="form-group">
+            <label for="teamAutoRefreshInterval">检查间隔 (小时)</label>
+            <input type="number" id="teamAutoRefreshInterval" name="interval_hours"
+                value="{{ periodic_team_sync_interval_hours or '12' }}" min="1" max="168" class="form-control">
+            <p class="form-help">定时任务运行频率。建议 6~24 小时。</p>
+        </div>
+
+        <div class="form-group">
+            <label for="teamAutoRefreshDays">触发刷新阈值 (天)</label>
+            <input type="number" id="teamAutoRefreshDays" name="refresh_interval_days"
+                value="{{ periodic_team_sync_days or '7' }}" min="1" max="30" class="form-control">
+            <p class="form-help">当 Team 距上次同步达到该天数时，自动执行状态刷新。</p>
+        </div>
+
+        <button type="submit" class="btn btn-primary">保存 Team 自动刷新配置</button>
+    </form>
+</div>
+
+
+<!-- 系统配色 -->
+<div class="content-section settings-panel" id="settings-ui-theme">
+    <div class="section-header">
+        <h3>系统配色</h3>
+    </div>
+
+    <form id="uiThemeForm" class="settings-form">
+        <div class="form-group">
+            <label for="uiThemeSelect">当前配色方案</label>
+            <select id="uiThemeSelect" name="theme" class="form-control">
+                <option value="ocean" {% if ui_theme == 'ocean' %}selected{% endif %}>深海蓝（默认）</option>
+                <option value="warm" {% if ui_theme == 'warm' %}selected{% endif %}>暖杏米（新配色）</option>
+            </select>
+            <p class="form-help">保存后 Team 控制台会使用所选配色。</p>
+        </div>
+
+        <button type="submit" class="btn btn-primary">保存系统配色</button>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-help {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        margin-top: 0.375rem;
+    }
+
+    .settings-panel {
+        display: none;
+    }
+
+    .settings-panel.active {
+        display: block;
+    }
+
+    .settings-nav-pill.active {
+        color: var(--text-main);
+        border-color: var(--primary);
+        background: var(--primary-soft);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 系统设置分区导航（单屏切换）
+    (function initSettingsPanels() {
+        const links = Array.from(document.querySelectorAll('.settings-nav-link'));
+        const panels = Array.from(document.querySelectorAll('.settings-panel'));
+
+        const activate = (targetId, pushHash = true) => {
+            const safeTarget = panels.some(p => p.id === targetId) ? targetId : 'settings-proxy';
+            panels.forEach(panel => panel.classList.toggle('active', panel.id === safeTarget));
+            links.forEach(link => link.classList.toggle('active', link.dataset.target === safeTarget));
+            if (pushHash) {
+                history.replaceState(null, '', `#${safeTarget}`);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        links.forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                activate(link.dataset.target);
+            });
+        });
+
+        const initial = (window.location.hash || '').replace('#', '') || 'settings-proxy';
+        activate(initial, false);
+    })();
+
+    // 代理配置表单
+    document.getElementById('proxyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const enabled = document.getElementById('proxyEnabled').checked;
+        const proxy = document.getElementById('proxyUrl').value.trim();
+
+        // 验证
+        if (enabled && !proxy) {
+            showToast('请输入代理地址', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/admin/settings/proxy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ enabled, proxy })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast('代理配置已保存', 'success');
+            } else {
+                showToast(data.error || '保存失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络错误', 'error');
+        }
+    });
+
+    // 密码修改表单
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const oldPassword = document.getElementById('oldPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        // 验证
+        if (newPassword.length < 6) {
+            showToast('新密码至少6位', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showToast('两次输入的密码不一致', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    old_password: oldPassword,
+                    new_password: newPassword
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast('密码修改成功,即将跳转到登录页', 'success');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                showToast(data.error || '修改失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络错误', 'error');
+        }
+    });
+
+    // 日志级别表单
+    document.getElementById('logLevelForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const level = document.getElementById('logLevel').value;
+
+        try {
+            const response = await fetch('/admin/settings/log-level', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ level })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast('日志级别已保存', 'success');
+            } else {
+                showToast(data.error || '保存失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络错误', 'error');
+        }
+    });
+
+
+    // Token 自动刷新配置表单
+    document.getElementById('tokenRefreshForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const interval_minutes = parseInt(document.getElementById('tokenRefreshInterval').value);
+        const window_hours = parseInt(document.getElementById('tokenRefreshWindow').value);
+        const client_id = document.getElementById('tokenRefreshClientId').value.trim();
+
+        if (isNaN(interval_minutes) || interval_minutes < 5 || interval_minutes > 1440) {
+            showToast('刷新间隔必须在 5~1440 分钟之间', 'error');
+            return;
+        }
+
+        if (isNaN(window_hours) || window_hours < 1 || window_hours > 24) {
+            showToast('提前刷新窗口必须在 1~24 小时之间', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/admin/settings/token-refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ interval_minutes, window_hours, client_id })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast(data.message || 'Token 刷新配置已保存', 'success');
+            } else {
+                showToast(data.error || '保存失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络错误', 'error');
+        }
+    });
+
+    // Team 自动刷新配置表单
+    document.getElementById('teamAutoRefreshForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const enabled = document.getElementById('teamAutoRefreshEnabled').checked;
+        const interval_hours = parseInt(document.getElementById('teamAutoRefreshInterval').value);
+        const refresh_interval_days = parseInt(document.getElementById('teamAutoRefreshDays').value);
+
+        if (isNaN(interval_hours) || interval_hours < 1 || interval_hours > 168) {
+            showToast('检查间隔必须在 1~168 小时之间', 'error');
+            return;
+        }
+
+        if (isNaN(refresh_interval_days) || refresh_interval_days < 1 || refresh_interval_days > 30) {
+            showToast('触发刷新阈值必须在 1~30 天之间', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/admin/settings/team-auto-refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ enabled, interval_hours, refresh_interval_days })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast(data.message || 'Team 自动刷新配置已保存', 'success');
+            } else {
+                showToast(data.error || '保存失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络错误', 'error');
+        }
+    });
+
+    // 系统配色表单
+    document.getElementById('uiThemeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const theme = document.getElementById('uiThemeSelect').value;
+
+        try {
+            const response = await fetch('/admin/settings/ui-theme', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ theme })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast(data.message || '系统配色已保存', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
+            } else {
+                showToast(data.error || '保存失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络错误', 'error');
+        }
+    });
+
+</script>
+{% endblock %}

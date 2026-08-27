@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - Team 成员管理控制台{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: radial-gradient(circle at 12% 18%, rgba(37, 99, 235, .14), transparent 32rem),
+                    radial-gradient(circle at 88% 82%, rgba(14, 165, 233, .12), transparent 30rem), #f5f7fb;
+    }
+    .auth-container { min-height: calc(100vh - 68px); display: grid; place-items: center; padding: 32px 20px; }
+    .team-login { width: min(940px, 100%); display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(340px, .88fr); overflow: hidden; border: 1px solid rgba(148,163,184,.25); border-radius: 24px; background: rgba(255,255,255,.92); box-shadow: 0 28px 80px rgba(30,41,59,.14); backdrop-filter: blur(16px); }
+    .login-intro { position: relative; min-height: 500px; padding: 54px; color: #fff; background: linear-gradient(145deg, #172554 0%, #1d4ed8 58%, #0284c7 100%); }
+    .login-intro::after { content: ""; position: absolute; right: -90px; bottom: -120px; width: 320px; height: 320px; border: 70px solid rgba(255,255,255,.08); border-radius: 50%; }
+    .login-brand { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; letter-spacing: .04em; }
+    .login-brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); }
+    .login-intro h1 { max-width: 430px; margin: 88px 0 18px; font-size: clamp(32px, 4vw, 48px); line-height: 1.12; letter-spacing: -.04em; }
+    .login-intro p { max-width: 440px; margin: 0; color: rgba(255,255,255,.78); font-size: 16px; line-height: 1.8; }
+    .login-features { position: absolute; left: 54px; bottom: 50px; z-index: 1; display: flex; gap: 20px; color: rgba(255,255,255,.86); font-size: 13px; }
+    .login-features span { display: inline-flex; align-items: center; gap: 7px; }
+    .login-panel { display: flex; flex-direction: column; justify-content: center; padding: 54px 48px; }
+    .login-panel-kicker { margin-bottom: 8px; color: #2563eb; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .login-panel h2 { margin: 0 0 10px; color: #172033; font-size: 28px; }
+    .login-panel-subtitle { margin: 0 0 32px; color: #64748b; font-size: 14px; line-height: 1.7; }
+    .login-panel label { display: block; margin-bottom: 9px; color: #334155; font-size: 14px; font-weight: 650; }
+    .password-field { position: relative; }
+    .password-field input { width: 100%; min-height: 50px; padding: 0 48px 0 15px; border: 1px solid #dbe2ea; border-radius: 12px; background: #fff; color: #172033; font-size: 15px; transition: border-color .2s, box-shadow .2s; }
+    .password-field input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,.11); }
+    .password-toggle { position: absolute; top: 50%; right: 12px; width: 34px; height: 34px; transform: translateY(-50%); border: 0; border-radius: 8px; background: transparent; color: #64748b; cursor: pointer; }
+    .login-error { margin-top: 14px; padding: 11px 12px; border: 1px solid #fecaca; border-radius: 10px; background: #fef2f2; color: #b91c1c; font-size: 13px; }
+    .login-submit { width: 100%; min-height: 50px; margin-top: 22px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #0284c7); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 12px 24px rgba(37,99,235,.22); transition: transform .18s, box-shadow .18s, opacity .18s; }
+    .login-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 15px 28px rgba(37,99,235,.28); }
+    .login-submit:disabled { cursor: wait; opacity: .68; }
+    .login-security-note { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 20px; color: #94a3b8; font-size: 12px; }
+    @media (max-width: 760px) {
+        .team-login { grid-template-columns: 1fr; }
+        .login-intro { min-height: 230px; padding: 34px; }
+        .login-intro h1 { margin: 46px 0 12px; font-size: 32px; }
+        .login-intro p { font-size: 14px; }
+        .login-features { display: none; }
+        .login-panel { padding: 38px 30px 42px; }
+    }
+</style>
+{% endblock %}
+
+{% block auth_content %}
+<section class="team-login" aria-labelledby="loginTitle">
+    <div class="login-intro">
+        <div class="login-brand"><span class="login-brand-mark"><i data-lucide="users-round"></i></span>TEAM CONTROL</div>
+        <h1>专注于 Team 与成员管理</h1>
+        <p>统一完成 Team 导入、成员邀请、身份分配和状态刷新，让日常管理保持清晰高效。</p>
+        <div class="login-features">
+            <span><i data-lucide="user-plus" width="16"></i> 成员邀请</span>
+            <span><i data-lucide="shield-check" width="16"></i> 权限管理</span>
+            <span><i data-lucide="refresh-cw" width="16"></i> 状态同步</span>
+        </div>
+    </div>
+    <div class="login-panel">
+        <div class="login-panel-kicker">Admin console</div>
+        <h2 id="loginTitle">管理员登录</h2>
+        <p class="login-panel-subtitle">请输入管理员密码进入 Team 成员管理控制台。</p>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <label for="password">管理员密码</label>
+            <div class="password-field">
+                <input type="password" id="password" name="password" placeholder="请输入管理员密码" required autofocus autocomplete="current-password">
+                <button type="button" class="password-toggle" id="passwordToggle" aria-label="显示密码"><i data-lucide="eye" width="18"></i></button>
+            </div>
+            <div id="errorMessage" class="login-error" role="alert" style="display:none"></div>
+            <button type="submit" class="login-submit">进入控制台</button>
+        </form>
+        <div class="login-security-note"><i data-lucide="lock-keyhole" width="14"></i> 管理会话仅保存在当前浏览器</div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('passwordToggle')?.addEventListener('click', function () {
+    const input = document.getElementById('password');
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    this.setAttribute('aria-label', showing ? '显示密码' : '隐藏密码');
+    this.innerHTML = `<i data-lucide="${showing ? 'eye' : 'eye-off'}" width="18"></i>`;
+    if (window.lucide) lucide.createIcons();
+});
+
+async function handleLogin(event) {
+    event.preventDefault();
+    const password = document.getElementById('password').value;
+    const errorMessage = document.getElementById('errorMessage');
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = '正在验证...';
+    errorMessage.style.display = 'none';
+    try {
+        const response = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            submitButton.textContent = '登录成功';
+            window.location.href = '/admin';
+            return;
+        }
+        errorMessage.textContent = data.error || data.detail || '密码不正确，请重新输入';
+    } catch (error) {
+        errorMessage.textContent = '无法连接到服务，请稍后重试';
+    }
+    errorMessage.style.display = 'block';
+    submitButton.disabled = false;
+    submitButton.textContent = '进入控制台';
+}
+</script>
+{% endblock %}
