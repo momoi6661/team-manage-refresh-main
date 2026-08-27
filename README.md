@@ -11,6 +11,7 @@
 - 浏览器打开 OpenAI OAuth 授权
 - 自动接收 OAuth 回调并导入 Team
 - 自动回调失败时手动粘贴回调地址
+- 直接粘贴 ChatGPT Session JSON 或 Session Token 导入
 - 查看已加入成员和待接受邀请
 - 以普通成员或管理员身份发送邀请，默认普通成员
 - 删除成员与撤回邀请
@@ -42,6 +43,8 @@ http://localhost:1455/auth/callback
 ```
 
 若 `1455` 无法访问，可在导入窗口展开“自动读取失败？手动粘贴回调”，粘贴浏览器地址栏中的完整回调地址。
+
+不方便完成 OAuth 验证时，也可以在“已有 Token 或 Session JSON”中粘贴 ChatGPT 会话 JSON。系统支持自动识别 `accessToken`、`sessionToken`、`user.email` 和 `account.id`；只提供 Session Token 时，后端会通过已配置的代理换取当前 Access Token。
 
 ## Docker Compose
 

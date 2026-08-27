@@ -1411,21 +1411,23 @@ class TeamService:
                 if not isinstance(item, dict):
                     continue
 
-                access_token = item.get("access_token") or item.get("token")
-                refresh_token = item.get("refresh_token")
-                session_token = item.get("session_token")
+                access_token = item.get("access_token") or item.get("accessToken") or item.get("token")
+                refresh_token = item.get("refresh_token") or item.get("refreshToken")
+                session_token = item.get("session_token") or item.get("sessionToken")
+                user = item.get("user") if isinstance(item.get("user"), dict) else {}
+                account = item.get("account") if isinstance(item.get("account"), dict) else {}
 
                 if not any([access_token, refresh_token, session_token]):
                     continue
 
                 normalized_items.append({
                     "access_token": access_token,
-                    "id_token": item.get("id_token"),
+                    "id_token": item.get("id_token") or item.get("idToken"),
                     "refresh_token": refresh_token,
                     "session_token": session_token,
-                    "client_id": item.get("client_id"),
-                    "email": item.get("email"),
-                    "account_id": item.get("account_id")
+                    "client_id": item.get("client_id") or item.get("clientId"),
+                    "email": item.get("email") or user.get("email"),
+                    "account_id": item.get("account_id") or item.get("accountId") or account.get("id")
                 })
 
             if not normalized_items:

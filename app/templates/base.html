@@ -136,7 +136,7 @@
                             </div>
 
                             <div class="import-mode-toggle-wrap">
-                                <button type="button" id="switchToManualFill" class="import-mode-toggle-btn">已有 Token？直接填写</button>
+                                <button type="button" id="switchToManualFill" class="import-mode-toggle-btn">已有 Token 或 Session JSON？直接导入</button>
                             </div>
                         </div>
 
@@ -145,10 +145,16 @@
                                 <button type="submit" class="btn btn-primary">导入 Team</button>
                             </div>
                             <div class="form-group">
-                                <label>Access Token (AT) <span class="required">*</span></label>
+                                <label>Session JSON</label>
+                                <textarea id="sessionPayload" name="sessionPayload" class="form-control" rows="5"
+                                    placeholder='粘贴包含 accessToken、sessionToken、user 和 account 的完整 JSON'></textarea>
+                                <small class="form-text">推荐：直接粘贴 ChatGPT 会话 JSON，系统会自动提取 Token、邮箱和 Team Account ID。内容只提交到当前管理服务。</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Access Token (AT)</label>
                                 <input type="text" name="accessToken" class="form-control"
-                                    placeholder="eyJhbGciOiJSUzI1Ni..." required>
-                                <small class="form-text">必填项，以 eyJ 开头的 JWT Token</small>
+                                    placeholder="eyJhbGciOiJSUzI1Ni...">
+                                <small class="form-text">可选；如果填写 Session JSON 或 Session Token，可不填 AT。</small>
                             </div>
                             <div class="form-group">
                                 <label>ID Token</label>
@@ -163,7 +169,7 @@
                             <div class="form-group">
                                 <label>Session Token</label>
                                 <input type="text" name="sessionToken" class="form-control" placeholder="eyJ...">
-                                <small class="form-text">可选，作为备选刷新方式</small>
+                                <small class="form-text">可单独填写，后端会通过代理获取当前 Access Token。</small>
                             </div>
                             <div class="form-group">
                                 <label>Client ID</label>

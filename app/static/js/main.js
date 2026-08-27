@@ -1056,14 +1056,36 @@ async function parseOAuthCallbackAndFill() {
 async function handleSingleImport(event) {
     event.preventDefault();
     const form = event.target;
-    const accessToken = form.accessToken.value.trim();
-    const idToken = form.idToken ? form.idToken.value.trim() : null;
-    const refreshToken = form.refreshToken ? form.refreshToken.value.trim() : null;
-    const sessionToken = form.sessionToken ? form.sessionToken.value.trim() : null;
-    const clientId = form.clientId ? form.clientId.value.trim() : null;
-    const email = form.email.value.trim();
-    const accountId = form.accountId.value.trim();
+    let accessToken = form.accessToken.value.trim();
+    let idToken = form.idToken ? form.idToken.value.trim() : '';
+    let refreshToken = form.refreshToken ? form.refreshToken.value.trim() : '';
+    let sessionToken = form.sessionToken ? form.sessionToken.value.trim() : '';
+    let clientId = form.clientId ? form.clientId.value.trim() : '';
+    let email = form.email.value.trim();
+    let accountId = form.accountId.value.trim();
+    const sessionPayloadText = form.sessionPayload ? form.sessionPayload.value.trim() : '';
     const submitButton = form.querySelector('button[type="submit"]');
+
+    if (sessionPayloadText) {
+        try {
+            const payload = JSON.parse(sessionPayloadText);
+            accessToken = accessToken || String(payload.accessToken || payload.access_token || '').trim();
+            idToken = idToken || String(payload.idToken || payload.id_token || '').trim();
+            refreshToken = refreshToken || String(payload.refreshToken || payload.refresh_token || '').trim();
+            sessionToken = sessionToken || String(payload.sessionToken || payload.session_token || '').trim();
+            clientId = clientId || String(payload.clientId || payload.client_id || '').trim();
+            email = email || String(payload.user?.email || payload.email || '').trim();
+            accountId = accountId || String(payload.account?.id || payload.accountId || payload.account_id || '').trim();
+        } catch (error) {
+            showToast('Session JSON 格式无效，请粘贴完整 JSON', 'error');
+            return;
+        }
+    }
+
+    if (!accessToken && !refreshToken && !sessionToken) {
+        showToast('请至少提供 Access Token、Refresh Token、Session Token 或 Session JSON', 'error');
+        return;
+    }
 
     submitButton.disabled = true;
     submitButton.textContent = '导入中...';
