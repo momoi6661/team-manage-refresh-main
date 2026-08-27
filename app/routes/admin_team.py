@@ -266,6 +266,22 @@ async def oauth_import_status(state: str, _: dict = Depends(require_admin)):
     return payload
 
 
+@router.post("/oauth/openai/cancel-import/{state}")
+async def cancel_oauth_import(state: str, _: dict = Depends(require_admin)):
+    """取消尚未收到回调的 OAuth 导入任务。"""
+    _prune_oauth_flows()
+    flow = _oauth_import_flows.get(state)
+    if not flow:
+        return JSONResponse(status_code=404, content={"success": False, "error": "授权任务已结束或过期"})
+
+    current_status = flow["status"]
+    if current_status != "waiting":
+        return {"success": True, "cancelled": False, "status": current_status}
+
+    _oauth_import_flows.pop(state, None)
+    return {"success": True, "cancelled": True, "status": "cancelled"}
+
+
 @callback_router.get("/auth/callback", response_class=HTMLResponse)
 async def automatic_oauth_callback(
     code: Optional[str] = None,

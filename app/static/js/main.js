@@ -664,6 +664,7 @@ function hideModal(modalId) {
         }
 
         if (modalId === 'importTeamModal') {
+            cancelActiveOAuthImport('已关闭导入窗口，已停止等待授权。', false, true);
             resetBatchImportForm();
         }
 
@@ -754,6 +755,38 @@ let oauthDraft = {
     clientId: ''
 };
 
+let activeOAuthImport = null;
+
+function restoreOAuthImportButton() {
+    const button = document.getElementById('btnOneClickToken');
+    if (button) {
+        button.disabled = false;
+        button.textContent = '在浏览器中授权并导入';
+    }
+}
+
+function cancelActiveOAuthImport(message, notify = true, closeAuthWindow = false) {
+    const session = activeOAuthImport;
+    if (!session || session.finished || session.cancelled) return false;
+
+    session.cancelled = true;
+    if (closeAuthWindow && session.authWindow && !session.authWindow.closed) {
+        session.authWindow.close();
+    }
+    if (session.state) {
+        apiCall(`/admin/oauth/openai/cancel-import/${encodeURIComponent(session.state)}`, {
+            method: 'POST'
+        }).catch(() => {});
+    }
+
+    const statusNode = document.getElementById('oauthAutoImportStatus');
+    if (statusNode) statusNode.textContent = message;
+    if (notify) showToast(message, 'warning');
+    restoreOAuthImportButton();
+    if (activeOAuthImport === session) activeOAuthImport = null;
+    return true;
+}
+
 let oauthParsedCache = null;
 let oauthParsedCacheKey = '';
 
@@ -768,6 +801,13 @@ async function generateOAuthAuthorizeLink() {
     const button = document.getElementById('btnOneClickToken');
     const statusNode = document.getElementById('oauthAutoImportStatus');
     const authWindow = window.open('about:blank', '_blank');
+    const oauthSession = {
+        authWindow,
+        state: '',
+        cancelled: false,
+        finished: false
+    };
+    activeOAuthImport = oauthSession;
     if (button) {
         button.disabled = true;
         button.textContent = '正在准备授权...';
@@ -793,11 +833,17 @@ async function generateOAuthAuthorizeLink() {
         oauthDraft.codeVerifier = data.code_verifier || '';
         oauthDraft.state = data.state || '';
         oauthDraft.clientId = data.client_id || clientId;
+        oauthSession.state = oauthDraft.state;
 
         const authUrl = (data.authorize_url || '').trim();
         if (!authUrl || !oauthDraft.state) {
             if (authWindow) authWindow.close();
             showToast('授权链接生成失败，请重试', 'error');
+            return;
+        }
+
+        if (authWindow && authWindow.closed) {
+            cancelActiveOAuthImport('授权窗口已关闭，已停止等待授权。');
             return;
         }
 
@@ -813,8 +859,10 @@ async function generateOAuthAuthorizeLink() {
 
         const deadline = Date.now() + 10 * 60 * 1000;
         while (Date.now() < deadline) {
-            await new Promise(resolve => setTimeout(resolve, 1200));
-            const statusResult = await apiCall(`/admin/oauth/openai/import-status/${encodeURIComponent(oauthDraft.state)}`, {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (oauthSession.cancelled) return;
+
+            const statusResult = await apiCall(`/admin/oauth/openai/import-status/${encodeURIComponent(oauthSession.state)}`, {
                 method: 'GET'
             });
             if (!statusResult.success) {
@@ -825,6 +873,7 @@ async function generateOAuthAuthorizeLink() {
             if (flow.status === 'processing') {
                 if (statusNode) statusNode.textContent = '已收到授权回调，正在读取账号并导入 Team...';
             } else if (flow.status === 'success') {
+                oauthSession.finished = true;
                 if (statusNode) statusNode.textContent = flow.message || 'Team 已自动导入。';
                 showToast(flow.message || '授权完成，Team 已自动导入', 'success');
                 hideModal('importTeamModal');
@@ -833,16 +882,41 @@ async function generateOAuthAuthorizeLink() {
             } else if (flow.status === 'failed') {
                 throw new Error(flow.error || '授权或导入失败');
             }
+
+            // 先读取服务端状态，再判断窗口是否关闭，避免成功回调页自动关闭时误报取消。
+            if (flow.status === 'waiting' && authWindow && authWindow.closed) {
+                const cancelResult = await apiCall(`/admin/oauth/openai/cancel-import/${encodeURIComponent(oauthSession.state)}`, {
+                    method: 'POST'
+                });
+                const cancellation = unwrapApiPayload(cancelResult) || {};
+                if (!cancelResult.success || cancellation.cancelled) {
+                    oauthSession.cancelled = true;
+                    if (activeOAuthImport === oauthSession) activeOAuthImport = null;
+                    const message = '授权窗口已关闭，已停止等待授权。';
+                    if (statusNode) statusNode.textContent = message;
+                    showToast(message, 'warning');
+                    restoreOAuthImportButton();
+                    return;
+                }
+                // 回调可能恰好已经被服务端接收；此时继续等待导入结果。
+            }
         }
         throw new Error('等待授权超时，请重新发起授权');
     } catch (error) {
-        if (authWindow && authWindow.location.href === 'about:blank') authWindow.close();
+        if (oauthSession.cancelled) return;
+        oauthSession.finished = true;
+        if (authWindow && !authWindow.closed) authWindow.close();
+        if (oauthSession.state) {
+            await apiCall(`/admin/oauth/openai/cancel-import/${encodeURIComponent(oauthSession.state)}`, {
+                method: 'POST'
+            });
+        }
         if (statusNode) statusNode.textContent = error.message || '授权失败，请重试。';
         showToast(getFriendlyAdminErrorMessage(error.message || '生成授权链接失败', 0, 'oauth'), 'error');
     } finally {
-        if (button) {
-            button.disabled = false;
-            button.textContent = '在浏览器中授权并导入';
+        if (activeOAuthImport === oauthSession) {
+            activeOAuthImport = null;
+            restoreOAuthImportButton();
         }
     }
 }
