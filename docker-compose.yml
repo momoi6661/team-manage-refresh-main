@@ -1,15 +1,19 @@
 services:
   app:
     build: .
+    image: team-manage-refresh-main-app:latest
     container_name: team-manage-app
     ports:
       - "8008:8008"
-      - "1455:8008"
     volumes:
       - ./data:/app/data
       - ./.env:/app/.env
+      - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: always
     environment:
       - DATABASE_URL=sqlite+aiosqlite:////app/data/team_manage.db
+      - OAUTH_REDIRECT_URI=http://localhost:1455/auth/callback
+      - OAUTH_CALLBACK_CONTAINER=team-manage-oauth-callback
+      - OAUTH_CALLBACK_IMAGE=team-manage-refresh-main-app:latest

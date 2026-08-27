@@ -2,6 +2,10 @@ function getCurrentPoolType() {
     return "normal";
 }
 
+function getOAuthRedirectUri() {
+    return document.body?.dataset.oauthRedirectUri || 'http://localhost:1455/auth/callback';
+}
+
 /**
  * GPT Team 管理系统 - 通用 JavaScript
  */
@@ -819,7 +823,7 @@ async function generateOAuthAuthorizeLink() {
             method: 'POST',
             body: JSON.stringify({
                 client_id: clientId,
-                redirect_uri: 'http://localhost:1455/auth/callback'
+                redirect_uri: getOAuthRedirectUri()
             })
         });
 
@@ -979,7 +983,7 @@ async function parseOAuthCallbackData(forceRefresh = false) {
             code_verifier: oauthDraft.codeVerifier || null,
             expected_state: oauthDraft.state || null,
             client_id: ((form.clientId ? form.clientId.value.trim() : '') || oauthDraft.clientId || 'app_EMoamEEZ73f0CkXaXp7hrann'),
-            redirect_uri: 'http://localhost:1455/auth/callback'
+            redirect_uri: getOAuthRedirectUri()
         })
     });
 

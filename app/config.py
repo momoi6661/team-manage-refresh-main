@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     app_host: str = "0.0.0.0"
     app_port: int = 8008
+    oauth_redirect_uri: str = "http://localhost:1455/auth/callback"
+    oauth_callback_container: str = "team-manage-oauth-callback"
+    oauth_callback_image: str = "team-manage-refresh-main-app:latest"
     debug: bool = True
 
     # 数据库配置

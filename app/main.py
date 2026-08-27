@@ -1,6 +1,5 @@
 """GPT Team 成员管理系统的 FastAPI 应用入口。"""
 import sys
-import asyncio
 from pathlib import Path
 
 if __package__ in {None, ""}:
@@ -33,7 +32,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # 全局调度器
 scheduler = AsyncIOScheduler(timezone=settings.timezone)
-oauth_callback_bridge = None
 
 DEFAULT_TOKEN_REFRESH_INTERVAL_MINUTES = 30
 DEFAULT_TOKEN_REFRESH_WINDOW_HOURS = 2
@@ -221,50 +219,12 @@ async def scheduled_periodic_team_status_sync():
         logger.error(f"Team 周期状态同步任务执行失败: {e}")
 
 
-async def _handle_oauth_callback_bridge(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    """把本机 1455 回调转发到直接运行时的应用端口。"""
-    try:
-        request_line = (await reader.readline()).decode("latin-1", errors="ignore").strip()
-        parts = request_line.split(" ")
-        target = parts[1] if len(parts) >= 2 else "/"
-        if not target.startswith("/auth/callback"):
-            response = b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-        else:
-            location = f"http://localhost:{settings.app_port}{target}"
-            response = (
-                "HTTP/1.1 307 Temporary Redirect\r\n"
-                f"Location: {location}\r\n"
-                "Cache-Control: no-store\r\n"
-                "Content-Length: 0\r\n"
-                "Connection: close\r\n\r\n"
-            ).encode("latin-1")
-        writer.write(response)
-        await writer.drain()
-    finally:
-        writer.close()
-        await writer.wait_closed()
-
-
-async def start_oauth_callback_bridge():
-    """本地直接运行时监听官方固定回调端口；Docker 映射到主应用时不依赖它。"""
-    if settings.app_port == 1455:
-        return None
-    try:
-        server = await asyncio.start_server(_handle_oauth_callback_bridge, "0.0.0.0", 1455)
-        logger.info("OAuth 回调桥已监听 1455，自动转发至应用端口 %s", settings.app_port)
-        return server
-    except OSError as exc:
-        logger.warning("OAuth 回调桥无法监听 1455，将使用手动回调兜底: %s", exc)
-        return None
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     应用生命周期管理
     启动时初始化数据库，关闭时释放资源
     """
-    global oauth_callback_bridge
     logger.info("系统正在启动，正在初始化数据库...")
     try:
         # 0. 确保数据库目录存在
@@ -297,7 +257,6 @@ async def lifespan(app: FastAPI):
             logger.info("Team 周期状态同步任务已禁用")
 
         logger.info("数据库初始化完成")
-        oauth_callback_bridge = await start_oauth_callback_bridge()
     except Exception as e:
         logger.error(f"数据库初始化失败: {e}")
 
@@ -306,11 +265,6 @@ async def lifespan(app: FastAPI):
     # 关闭定时任务
     if scheduler.running:
         scheduler.shutdown(wait=False)
-
-    if oauth_callback_bridge:
-        oauth_callback_bridge.close()
-        await oauth_callback_bridge.wait_closed()
-        oauth_callback_bridge = None
 
     # 关闭连接
     await close_db()
@@ -356,6 +310,7 @@ app.mount("/static", StaticFiles(directory=str(APP_DIR / "static")), name="stati
 
 # 配置模板引擎
 templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
+templates.env.globals["oauth_redirect_uri"] = settings.oauth_redirect_uri
 
 # 添加模板过滤器
 def format_datetime(dt):

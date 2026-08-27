@@ -2095,7 +2095,7 @@
                 method: 'POST',
                 body: JSON.stringify({
                     client_id: clientId,
-                    redirect_uri: 'http://localhost:1455/auth/callback'
+                    redirect_uri: getOAuthRedirectUri()
                 })
             });
 
@@ -2149,7 +2149,7 @@
                     code_verifier: editOauthDraft.codeVerifier || null,
                     expected_state: editOauthDraft.state || null,
                     client_id: currentClientId,
-                    redirect_uri: 'http://localhost:1455/auth/callback'
+                    redirect_uri: getOAuthRedirectUri()
                 })
             });
 

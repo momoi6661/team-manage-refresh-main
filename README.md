@@ -36,13 +36,13 @@ Copy-Item .env.example .env
 
 打开：<http://localhost:8008>
 
-本地运行时，程序会同时监听 `1455`，用于接收官方 OAuth 回调：
+OAuth 发起时程序会临时监听 `1455`，收到回调、取消授权或等待超时后会自动释放：
 
 ```text
 http://localhost:1455/auth/callback
 ```
 
-若 `1455` 无法访问，可在导入窗口展开“自动读取失败？手动粘贴回调”，粘贴浏览器地址栏中的完整回调地址。
+若自动回调失败，可在导入窗口展开“自动读取失败？手动粘贴回调”，粘贴浏览器地址栏中的完整回调地址。
 
 导入窗口提供彼此独立的“OAuth 授权”和“Token / Session”页签。不方便完成 OAuth 验证时，可直接进入第二个页签粘贴 ChatGPT 会话 JSON，无需发起授权或填写回调。系统支持自动识别 `accessToken`、`sessionToken`、`user.email` 和 `account.id`；只提供 Session Token 时，后端会通过已配置的代理换取当前 Access Token。
 
@@ -53,9 +53,11 @@ Copy-Item .env.example .env
 docker compose up -d --build
 ```
 
-- 管理页面：<http://localhost:61210>
-- OAuth 回调：<http://localhost:1455/auth/callback>
+- 管理页面：<http://localhost:8008>
+- OAuth 回调：<http://localhost:1455/auth/callback>（仅授权期间临时占用）
 - 数据目录：`./data`
+
+Docker 部署会挂载本机 Docker socket，仅用于在发起 OAuth 时创建一次性回调辅助容器。辅助容器收到回调、取消授权或等待 10 分钟后退出，随后释放 `1455`。
 
 ### Docker 代理地址
 

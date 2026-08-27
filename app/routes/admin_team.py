@@ -12,9 +12,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings as app_settings
 from app.database import AsyncSessionLocal, get_db
 from app.dependencies.auth import require_admin
 from app.services.chatgpt import chatgpt_service
+from app.services.oauth_listener import oauth_callback_listener
 from app.services.settings import DEFAULT_UI_THEME, settings_service
 from app.services.team import team_service
 
@@ -41,7 +43,7 @@ class TeamImportRequest(BaseModel):
 
 class OAuthAuthorizeRequest(BaseModel):
     client_id: str = "app_EMoamEEZ73f0CkXaXp7hrann"
-    redirect_uri: str = "http://localhost:1455/auth/callback"
+    redirect_uri: str = app_settings.oauth_redirect_uri
     scope: str = "openid email profile offline_access"
     audience: Optional[str] = None
     codex_cli_simplified_flow: bool = True
@@ -53,7 +55,7 @@ class OAuthCallbackParseRequest(BaseModel):
     code_verifier: Optional[str] = None
     expected_state: Optional[str] = None
     client_id: Optional[str] = "app_EMoamEEZ73f0CkXaXp7hrann"
-    redirect_uri: str = "http://localhost:1455/auth/callback"
+    redirect_uri: str = app_settings.oauth_redirect_uri
 
 
 class AddMemberRequest(BaseModel):
@@ -233,6 +235,9 @@ async def start_oauth_import(data: OAuthAuthorizeRequest, user: dict = Depends(r
         codex_cli_simplified_flow=data.codex_cli_simplified_flow,
         id_token_add_organizations=data.id_token_add_organizations,
     )
+    listener_result = await oauth_callback_listener.start()
+    if not listener_result["success"]:
+        return JSONResponse(status_code=409, content=listener_result)
     _oauth_import_flows[auth["state"]] = {
         "created_at": time.monotonic(),
         "status": "waiting",
@@ -272,6 +277,7 @@ async def cancel_oauth_import(state: str, _: dict = Depends(require_admin)):
     _prune_oauth_flows()
     flow = _oauth_import_flows.get(state)
     if not flow:
+        await oauth_callback_listener.stop()
         return JSONResponse(status_code=404, content={"success": False, "error": "授权任务已结束或过期"})
 
     current_status = flow["status"]
@@ -279,6 +285,7 @@ async def cancel_oauth_import(state: str, _: dict = Depends(require_admin)):
         return {"success": True, "cancelled": False, "status": current_status}
 
     _oauth_import_flows.pop(state, None)
+    await oauth_callback_listener.stop()
     return {"success": True, "cancelled": True, "status": "cancelled"}
 
 

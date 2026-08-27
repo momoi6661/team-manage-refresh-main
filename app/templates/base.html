@@ -27,7 +27,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 
-<body class="bg-gray-50 text-slate-900{% if user %} admin-theme theme-{{ ui_theme|default('ocean') }}{% endif %}" data-pool-type="normal" data-ui-theme="{{ ui_theme|default('ocean') }}">
+<body class="bg-gray-50 text-slate-900{% if user %} admin-theme theme-{{ ui_theme|default('ocean') }}{% endif %}" data-pool-type="normal" data-ui-theme="{{ ui_theme|default('ocean') }}" data-oauth-redirect-uri="{{ oauth_redirect_uri }}">
     {% if user %}
     <!-- 导航栏 -->
     <nav class="navbar">
@@ -127,10 +127,10 @@
                         </div>
 
                         <div class="oauth-quick-fields">
-                            <div id="oauthAutoImportStatus" class="form-text">等待发起授权。回调地址固定为 http://localhost:1455/auth/callback</div>
+                            <div id="oauthAutoImportStatus" class="form-text">等待发起授权。回调地址为 {{ oauth_redirect_uri }}</div>
                             <details class="oauth-manual-fallback">
                                 <summary>自动读取失败？手动粘贴回调</summary>
-                                <textarea id="oauthCallbackInput" class="form-control" rows="3" placeholder="粘贴浏览器地址栏中的完整 http://localhost:1455/auth/callback?... 地址"></textarea>
+                                <textarea id="oauthCallbackInput" class="form-control" rows="3" placeholder="粘贴浏览器地址栏中的完整 {{ oauth_redirect_uri }}?... 地址"></textarea>
                                 <button type="button" id="btnManualOAuthImport" class="btn btn-secondary">解析回调并导入</button>
                             </details>
                         </div>
@@ -326,7 +326,7 @@ eyJ..."></textarea>
     <div id="toast" class="toast"></div>
 
     <script>window.SYSTEM_UI_THEME = {{ ui_theme|default("ocean")|tojson }};</script>
-    <script src="/static/js/main.js?v=20260827-oauth-cancel-1"></script>
+    <script src="/static/js/main.js?v=20260827-oauth-port-1"></script>
     <script>
         lucide.createIcons();
     </script>
