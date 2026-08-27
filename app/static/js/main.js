@@ -469,16 +469,6 @@ function confirmAction(message) {
 }
 
 
-function setSingleImportMode(mode = 'quick') {
-    const quickSection = document.getElementById('oauthQuickSection');
-    const manualSection = document.getElementById('manualTokenSection');
-    if (!quickSection || !manualSection) return;
-
-    const isManual = mode === 'manual';
-    quickSection.style.display = isManual ? 'none' : 'block';
-    manualSection.style.display = isManual ? 'block' : 'none';
-}
-
 function syncResponsiveSidebarMount() {
     const sidebar = document.getElementById('adminSidebar');
     const overlay = document.getElementById('sidebarOverlay');
@@ -584,16 +574,6 @@ document.addEventListener('DOMContentLoaded', function () {
         btnManualOAuthImport.addEventListener('click', manualOAuthCallbackImport);
     }
 
-    const switchToManualFill = document.getElementById('switchToManualFill');
-    if (switchToManualFill) {
-        switchToManualFill.addEventListener('click', () => setSingleImportMode('manual'));
-    }
-
-    const switchToQuickToken = document.getElementById('switchToQuickToken');
-    if (switchToQuickToken) {
-        switchToQuickToken.addEventListener('click', () => setSingleImportMode('quick'));
-    }
-
     const chooseJsonFileBtn = document.getElementById('chooseJsonFileBtn');
     const jsonImportFile = document.getElementById('jsonImportFile');
     if (chooseJsonFileBtn && jsonImportFile) {
@@ -611,7 +591,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    setSingleImportMode('quick');
 });
 
 // 检查认证状态
@@ -649,7 +628,7 @@ function showModal(modalId) {
         if (overlay) overlay.classList.remove('show');
 
         if (modalId === 'importTeamModal') {
-            setSingleImportMode('quick');
+            switchModalTab('importTeamModal', 'oauthImport');
         }
 
         syncToastMountTarget();

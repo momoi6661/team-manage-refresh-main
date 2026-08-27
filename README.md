@@ -44,7 +44,7 @@ http://localhost:1455/auth/callback
 
 若 `1455` 无法访问，可在导入窗口展开“自动读取失败？手动粘贴回调”，粘贴浏览器地址栏中的完整回调地址。
 
-不方便完成 OAuth 验证时，也可以在“已有 Token 或 Session JSON”中粘贴 ChatGPT 会话 JSON。系统支持自动识别 `accessToken`、`sessionToken`、`user.email` 和 `account.id`；只提供 Session Token 时，后端会通过已配置的代理换取当前 Access Token。
+导入窗口提供彼此独立的“OAuth 授权”和“Token / Session”页签。不方便完成 OAuth 验证时，可直接进入第二个页签粘贴 ChatGPT 会话 JSON，无需发起授权或填写回调。系统支持自动识别 `accessToken`、`sessionToken`、`user.email` 和 `account.id`；只提供 Session Token 时，后端会通过已配置的代理换取当前 Access Token。
 
 ## Docker Compose
 
