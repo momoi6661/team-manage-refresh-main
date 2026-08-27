@@ -3,7 +3,7 @@ services:
     build: .
     container_name: team-manage-app
     ports:
-      - "61210:8008"
+      - "8008:8008"
       - "1455:8008"
     volumes:
       - ./data:/app/data
